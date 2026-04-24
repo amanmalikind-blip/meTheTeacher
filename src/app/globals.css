@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply bg-slate-50 text-slate-900 antialiased;
+}
+
+/* Lesson content typography */
+.lesson-html {
+  @apply leading-relaxed text-slate-800;
+}
+.lesson-html h1 {
+  @apply text-3xl font-bold mt-6 mb-3;
+}
+.lesson-html h2 {
+  @apply text-2xl font-semibold mt-5 mb-2;
+}
+.lesson-html h3 {
+  @apply text-xl font-semibold mt-4 mb-2;
+}
+.lesson-html p {
+  @apply my-3;
+}
+.lesson-html ul {
+  @apply list-disc pl-6 my-3;
+}
+.lesson-html ol {
+  @apply list-decimal pl-6 my-3;
+}
+.lesson-html code {
+  @apply bg-slate-100 px-1 py-0.5 rounded text-sm;
+}
+.lesson-html pre {
+  @apply bg-slate-900 text-slate-50 p-4 rounded-lg overflow-auto my-4;
+}
+.lesson-html blockquote {
+  @apply border-l-4 border-brand-500 pl-4 italic text-slate-700 my-4;
+}
+.lesson-html .analogy,
+.lesson-html .example,
+.lesson-html .tip {
+  @apply bg-brand-50 border border-brand-100 rounded-lg p-4 my-4;
+}
+.lesson-html .analogy::before {
+  content: "Analogy: ";
+  @apply font-semibold text-brand-700;
+}
+.lesson-html .example::before {
+  content: "Example: ";
+  @apply font-semibold text-brand-700;
+}
+.lesson-html .tip::before {
+  content: "Tip: ";
+  @apply font-semibold text-brand-700;
+}
+
+/* Print / PDF export */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    @apply bg-white text-black;
+  }
+  .lesson-html {
+    @apply text-black;
+  }
+  .lesson-html .analogy,
+  .lesson-html .example,
+  .lesson-html .tip {
+    background: #f4f7ff;
+    border: 1px solid #d9e4ff;
+  }
+  @page {
+    margin: 18mm;
+  }
+}
