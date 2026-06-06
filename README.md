@@ -9,7 +9,7 @@ enjoys** (cricket, gaming, movies, music, …). Progress, lessons and quizzes ar
 saved to their account and sync across devices.
 
 - **Accounts + cloud sync**: email/password login; persona, lessons, quizzes and progress persist across devices.
-- **Persona-driven lessons**: explanations built around each student's interests, CBSE-aligned and pitched to their class.
+- **Persona-driven lessons**: explanations built around each student's interests — and their **home city** (local food, famous joints, daily habits) — CBSE-aligned and pitched to their class.
 - **Chapter dropdowns**: real NCERT chapter lists per subject (plus a free-text option).
 - **Quizzes & mock tests**: auto-generated MCQs per chapter with scoring, review and explanations.
 - **Doubt-chat**: ask follow-up questions on any lesson and get persona-style answers.

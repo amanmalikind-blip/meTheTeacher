@@ -15,6 +15,7 @@ export type ProfileRow = {
   style: string | null;
   character: string | null;
   language: string | null;
+  city: string | null;
   voice_uri: string | null;
   onboarded: boolean;
 };
@@ -52,6 +53,7 @@ export function rowToPersona(row: ProfileRow | null): Persona | null {
     style: (row.style as Persona["style"]) ?? undefined,
     character: (row.character as Persona["character"]) ?? undefined,
     language: (row.language as Persona["language"]) ?? undefined,
+    city: row.city ?? undefined,
     voiceURI: row.voice_uri ?? undefined
   };
   return isCompletePersona(candidate) ? candidate : null;
@@ -86,6 +88,7 @@ export async function savePersona(db: DB, persona: Persona): Promise<void> {
       style: persona.style,
       character: persona.character,
       language: persona.language,
+      city: persona.city?.trim() || null,
       voice_uri: persona.voiceURI ?? null,
       onboarded: true,
       updated_at: new Date().toISOString()

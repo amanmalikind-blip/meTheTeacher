@@ -8,6 +8,7 @@ import {
   COMFORT_LEVELS,
   INTERESTS,
   LANGUAGES,
+  POPULAR_CITIES,
   TEACHING_STYLES,
   subjectsForClass
 } from "@/lib/constants";
@@ -109,6 +110,26 @@ export function PersonaForm({
               </option>
             ))}
           </select>
+        </Field>
+
+        <Field
+          label="Which city are you from?"
+          hint="optional — for local food & hangout analogies"
+        >
+          <input
+            type="text"
+            list="city-options"
+            value={draft.city ?? ""}
+            onChange={(e) => setField("city", e.target.value)}
+            placeholder="e.g. Lucknow"
+            maxLength={60}
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500"
+          />
+          <datalist id="city-options">
+            {POPULAR_CITIES.map((c) => (
+              <option key={c} value={c} />
+            ))}
+          </datalist>
         </Field>
 
         <Field

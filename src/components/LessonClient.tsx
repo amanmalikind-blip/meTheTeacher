@@ -137,6 +137,7 @@ export function LessonClient({
           .slice(0, 2)
           .map((i) => interestLabel(i).replace(/^\W+\s*/, ""))
           .join(" & ") || "your interests"}
+        {persona.city?.trim() ? ` · ${persona.city.trim()} flavour` : ""}
       </p>
 
       <div className="mt-6 grid lg:grid-cols-[340px_1fr] gap-8">

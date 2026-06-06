@@ -21,6 +21,7 @@ export type Persona = {
   style: TeachingStyleId;
   character: CharacterId;
   language: LanguageId;
+  city?: string;
   voiceURI?: string;
 };
 
@@ -31,7 +32,8 @@ export const DEFAULT_PERSONA: Persona = {
   comfort: "some",
   style: "analogies",
   character: "friendly-mentor",
-  language: "en"
+  language: "en",
+  city: ""
 };
 
 export function isCompletePersona(p: Partial<Persona> | null): p is Persona {

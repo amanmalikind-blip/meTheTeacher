@@ -15,11 +15,15 @@ create table if not exists public.profiles (
   style       text,
   character   text,
   language    text,
+  city        text,
   voice_uri   text,
   onboarded   boolean not null default false,
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );
+
+-- Migration for projects created before the city field existed.
+alter table public.profiles add column if not exists city text;
 
 -- ---------------------------------------------------------------------------
 -- lessons: every generated lesson (history + saved library).

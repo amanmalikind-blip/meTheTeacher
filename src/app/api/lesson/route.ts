@@ -52,6 +52,9 @@ function validate(body: unknown): LessonRequest | { error: string } {
     return { error: "Invalid language." };
   }
 
+  const city =
+    typeof b.city === "string" ? b.city.trim().slice(0, 60) : undefined;
+
   return {
     klass: b.klass as LessonRequest["klass"],
     subject: b.subject,
@@ -60,6 +63,7 @@ function validate(body: unknown): LessonRequest | { error: string } {
     style: b.style as LessonRequest["style"],
     character: b.character as LessonRequest["character"],
     language: b.language as LessonRequest["language"],
+    city,
     chapter
   };
 }

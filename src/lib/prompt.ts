@@ -21,6 +21,7 @@ export type LessonRequest = {
   style: TeachingStyleId;
   character: CharacterId;
   language: LanguageId;
+  city?: string;
   chapter: string;
 };
 
@@ -59,6 +60,7 @@ Hard rules:
 - Stay accurate to the CBSE NCERT syllabus for the given class and subject. If the chapter name is ambiguous, teach the standard CBSE chapter that best matches it.
 - Pitch difficulty to the class level (Class 10 vs Class 12) AND the student's stated confidence.
 - Weave the student's interests into analogies and examples naturally — do not force every single one, choose the ones that fit the concept best.
+- If the student's home city is given, localise some analogies and examples to that city — its food and eating habits, famous local joints/markets/landmarks, traffic, festivals and everyday local life — so it feels familiar. Stay authentic to that city; never invent fake place names.
 - Lead with the chosen teaching style; you may mix others in supporting sections.
 - Stay in character for the chosen narrator throughout.
 - Language rules:
@@ -75,7 +77,7 @@ export const DOUBT_SYSTEM_PROMPT = `You are meTheTeacher, a friendly CBSE tutor 
 Rules:
 - Answer in plain text (no HTML, no markdown headings). Short paragraphs or a few bullet-like lines are fine.
 - Keep it concise (under ~150 words) and directly address the doubt.
-- Use one analogy from the student's interests if it genuinely helps.
+- Use one analogy from the student's interests (or their home city's food/places/habits) if it genuinely helps.
 - Match the student's class level and chosen language (English / Hindi / Hinglish).
 - Stay accurate to the CBSE NCERT syllabus. If the question is off-topic from studying, gently steer back.`;
 
@@ -90,7 +92,9 @@ export function buildDoubtPrompt(
     "general everyday life";
   return `Student: ${klassLabel} (CBSE), studying "${subjectLabel(req.subject)}".
 Current chapter: ${req.chapter}
-Interests (for analogies): ${interests}
+Interests (for analogies): ${interests}${
+    req.city?.trim() ? `\nHome city (use local food/joints/habits if it helps): ${req.city.trim()}` : ""
+  }
 Language: ${lang}
 
 Their doubt: ${req.question}
@@ -143,7 +147,11 @@ Student persona:
 - Class: ${klassLabel} (CBSE)
 - Subject: ${subject}
 - Confidence with the subject: ${comfort}
-- Interests to use for analogies/examples: ${interests}
+- Interests to use for analogies/examples: ${interests}${
+    req.city?.trim()
+      ? `\n- Home city (use its local food, famous joints, habits & landmarks in some analogies): ${req.city.trim()}`
+      : ""
+  }
 - Preferred teaching style: ${req.style}
 - Narrator character: ${req.character}
 - Language: ${lang}

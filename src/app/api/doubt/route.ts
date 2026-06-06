@@ -62,6 +62,7 @@ export async function POST(req: NextRequest) {
         style: "analogies" as never,
         character: "friendly-mentor" as never,
         language: b.language as never,
+        city: typeof b.city === "string" ? b.city.trim().slice(0, 60) : undefined,
         chapter,
         question
       }),

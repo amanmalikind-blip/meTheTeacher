@@ -160,6 +160,35 @@ export const CHARACTERS = [
 
 export type CharacterId = (typeof CHARACTERS)[number]["id"];
 
+// Popular Indian cities offered as autocomplete suggestions for the persona's
+// city. It's a free-text field — any city works; these just speed up entry.
+export const POPULAR_CITIES = [
+  "Delhi",
+  "Mumbai",
+  "Bengaluru",
+  "Kolkata",
+  "Chennai",
+  "Hyderabad",
+  "Pune",
+  "Ahmedabad",
+  "Jaipur",
+  "Lucknow",
+  "Kanpur",
+  "Nagpur",
+  "Indore",
+  "Bhopal",
+  "Patna",
+  "Chandigarh",
+  "Surat",
+  "Kochi",
+  "Coimbatore",
+  "Visakhapatnam",
+  "Guwahati",
+  "Amritsar",
+  "Varanasi",
+  "Ludhiana"
+] as const;
+
 export const FREE_LESSON_LIMIT = Number(
   process.env.NEXT_PUBLIC_FREE_LESSON_LIMIT || 5
 );
