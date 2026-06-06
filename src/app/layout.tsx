@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "meTheTeacher — Learn any topic, your way",
+  title: "meTheTeacher — CBSE chapters explained your way",
   description:
-    "Generate HTML lessons customised to your level, teaching style, character, voice and language. Export to PDF."
+    "AI teacher for CBSE Class 10 & 12. Explains chapters with analogies built from your own interests, in English, Hindi or Hinglish. Read aloud or export to PDF."
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

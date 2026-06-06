@@ -2,20 +2,20 @@ import Link from "next/link";
 
 const features = [
   {
-    title: "Any topic, any level",
-    body: "Tell us what you want to learn. We tailor depth and vocabulary to beginner, intermediate, or advanced."
+    title: "Built for CBSE Class 10 & 12",
+    body: "Chapters explained in line with the NCERT syllabus, pitched to your class and how confident you already feel."
   },
   {
-    title: "Your teaching style",
-    body: "Analogies, worked examples, Socratic questions, story-driven — pick one or let us learn yours."
+    title: "Taught through what you love",
+    body: "Cricket, gaming, movies, music — your AI teacher turns your interests into analogies that make concepts click."
   },
   {
-    title: "Character & voice",
-    body: "Pick a narrator character and voice. We'll read the lesson aloud in your chosen language."
+    title: "Your persona, your teacher",
+    body: "Answer a few quick questions once. Pick a teaching style, a teacher's vibe, and English, Hindi or Hinglish."
   },
   {
-    title: "HTML online + PDF export",
-    body: "Read instantly as a web lesson, then export a clean PDF with your customisations baked in."
+    title: "Read online, listen, or export PDF",
+    body: "Every chapter renders as a clean lesson with examples, exam-style questions, revision notes — read aloud or save as PDF."
   }
 ];
 
@@ -27,18 +27,19 @@ export default function HomePage() {
           meTheTeacher
         </p>
         <h1 className="mt-3 text-4xl sm:text-5xl font-bold leading-tight">
-          Learn anything — taught the way <span className="text-brand-600">you</span> learn best.
+          CBSE chapters, explained the way <span className="text-brand-600">you</span> think.
         </h1>
         <p className="mt-5 text-lg text-slate-600 max-w-2xl mx-auto">
-          Five free lessons on us. Pick a topic, level, teaching style, character and voice — we
-          generate a rich HTML lesson you can read online or export to a customised PDF.
+          Tell us your class, subject and interests. Your AI teacher explains any
+          Class 10 or Class 12 chapter simply — with analogies and examples drawn
+          from things you actually enjoy. Five free lessons, no sign-up.
         </p>
         <div className="mt-8 flex gap-3 justify-center">
           <Link
             href="/lesson"
             className="inline-flex items-center rounded-lg bg-brand-600 px-5 py-3 text-white font-semibold hover:bg-brand-700 transition"
           >
-            Start a free lesson
+            Build my profile
           </Link>
           <a
             href="#how"
@@ -62,7 +63,7 @@ export default function HomePage() {
       </section>
 
       <footer className="mt-20 text-center text-sm text-slate-500">
-        Built for Azure. Free tier: 5 lessons, no sign-up required.
+        Free tier: 5 lessons, no sign-up required. Powered by open-source AI.
       </footer>
     </main>
   );

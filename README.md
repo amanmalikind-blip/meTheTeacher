@@ -1,94 +1,103 @@
 # meTheTeacher
 
-An AI teaching platform that generates lessons on any topic, customised to the learner's level, preferred teaching style, narrator character, and language. Lessons render as styled HTML in the browser and export to PDF via the browser's print pipeline.
+An AI teaching platform for **CBSE Class 10 & 12** students. The student answers
+a short questionnaire that captures their **persona** — class, subject,
+interests/hobbies, confidence level, preferred teaching style, teacher "vibe"
+and language. An agentic AI then explains any chapter simply, like a teacher,
+using **analogies and examples drawn from the things that student actually
+enjoys** (cricket, gaming, movies, music, …). Lessons render as styled HTML and
+export to PDF.
 
-- **5 free lessons** per visitor (tracked in `localStorage`; no sign-up).
-- **HTML online view** with analogy / example / tip callouts.
-- **PDF export** with the user's chosen style baked in (regenerate → print).
-- **Teaching styles**: analogies, Socratic, worked examples, story-driven, visual, project-based.
-- **Characters**: friendly mentor, quirky scientist, strict professor, wise elder, hype coach.
-- **Voices / languages**: 9 languages; Web Speech API reads lessons aloud with the user's chosen voice.
-- **Auto-picks the user's favourite style** next time based on usage history.
+- **Persona-first**: a one-time questionnaire (stored in `localStorage`, no sign-up) personalises every lesson.
+- **CBSE-aligned**: explanations follow the NCERT syllabus, pitched to Class 10 vs 12 and the student's confidence.
+- **Analogies from your interests**: pick what you love; the AI builds the explanation around it.
+- **Teaching styles**: analogies, Socratic, worked examples, story-driven, visual, practical.
+- **Teacher vibes**: friendly mentor, cool senior, quirky scientist, strict professor, hype coach.
+- **Languages**: English, Hindi, or Hinglish. Web Speech API reads lessons aloud.
+- **HTML view + PDF export** with exam-style questions and quick-revision notes.
+- **5 free lessons** per visitor.
+
+## Cost: effectively free
+
+This app is designed to run at **₹0 / $0** for a public site:
+
+| Piece | Choice | Cost |
+|---|---|---|
+| LLM | **Groq** running open-source models (e.g. `llama-3.3-70b-versatile`) | Free tier — generous daily limits; when the quota is hit it simply rate-limits, so there is **no surprise bill** |
+| Hosting | **Vercel** Hobby plan | Free — native Next.js, auto-deploys from GitHub |
+| Code | **GitHub** | Free |
+
+No new npm dependencies were added for Groq — the app calls Groq's
+OpenAI-compatible REST endpoint directly via `fetch`, so the bundle stays tiny.
 
 ## Stack
 
 - Next.js 14 (App Router) + TypeScript + Tailwind CSS
-- `@anthropic-ai/sdk` on a server-side API route (streams HTML)
-- Client-side `localStorage` for quota and preferences
+- Groq OpenAI-compatible API on a server-side route (`/api/lesson`, streams HTML)
+- Client-side `localStorage` for the persona and the free-lesson quota
 - Browser `window.print()` + print CSS for PDF export
 - Web Speech API for text-to-speech
 
 ## Run locally
 
 ```sh
-cp .env.example .env.local      # fill in ANTHROPIC_API_KEY
+cp .env.example .env.local      # add your free GROQ_API_KEY
 npm install
 npm run dev                     # http://localhost:3000
 ```
+
+Get a free key at https://console.groq.com/keys.
 
 Env vars:
 
 | Name | Purpose |
 |---|---|
-| `ANTHROPIC_API_KEY` | Required. Server-only key used by `/api/lesson`. |
-| `ANTHROPIC_MODEL` | Optional. Defaults to `claude-sonnet-4-6`. |
+| `GROQ_API_KEY` | **Required.** Server-only key used by `/api/lesson`. |
+| `GROQ_MODEL` | Optional. Defaults to `llama-3.3-70b-versatile`. |
 | `NEXT_PUBLIC_FREE_LESSON_LIMIT` | Optional. Free-tier cap, default `5`. |
 
-## Deploying to Azure
+## Deploy from GitHub to Vercel (recommended, zero config)
 
-The app is a standard Next.js project built in `standalone` mode, so it deploys to Azure in three common ways. Pick one.
+1. Push this repo to GitHub (already done if you're reading this there).
+2. Go to https://vercel.com → **Add New… → Project** → import this repository.
+3. Vercel auto-detects Next.js. No build settings to change.
+4. Under **Environment Variables**, add `GROQ_API_KEY` (and optionally
+   `GROQ_MODEL`). **Never** prefix the key with `NEXT_PUBLIC_`.
+5. Click **Deploy**. You get a public `*.vercel.app` URL.
 
-### Option A — Azure App Service (Linux, Node 20)
+After this, **every push to your branch auto-deploys** — your GitHub repo is the
+source of truth and Vercel does the hosting.
 
-```sh
-az group create -n metheteacher-rg -l eastus
-az appservice plan create -g metheteacher-rg -n metheteacher-plan --is-linux --sku B1
-az webapp create -g metheteacher-rg -p metheteacher-plan -n <unique-app-name> --runtime "NODE:20-lts"
+### Optional: deploy via GitHub Actions instead
 
-az webapp config appsettings set -g metheteacher-rg -n <unique-app-name> --settings \
-  ANTHROPIC_API_KEY=<your-key> \
-  ANTHROPIC_MODEL=claude-sonnet-4-6 \
-  NEXT_PUBLIC_FREE_LESSON_LIMIT=5 \
-  WEBSITE_NODE_DEFAULT_VERSION=~20
+If you'd rather GitHub itself trigger the deploy (instead of Vercel's Git
+integration), a workflow is included at `.github/workflows/deploy.yml`. It runs
+only when you add these repository **secrets** (Settings → Secrets and variables
+→ Actions):
 
-az webapp config set -g metheteacher-rg -n <unique-app-name> \
-  --startup-file "node .next/standalone/server.js"
+- `VERCEL_TOKEN` — from https://vercel.com/account/tokens
+- `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID` — from the project's `.vercel/project.json` after running `npx vercel link` locally
 
-# Deploy from local source
-az webapp up -g metheteacher-rg -n <unique-app-name> --runtime "NODE:20-lts"
-```
-
-The API route (`/api/lesson`) is server-side and streams responses, which App Service supports out of the box.
-
-### Option B — Azure Container Apps (Dockerfile included)
-
-```sh
-az group create -n metheteacher-rg -l eastus
-az acr create -g metheteacher-rg -n <uniqueacr> --sku Basic --admin-enabled true
-az acr build -r <uniqueacr> -t metheteacher:latest .
-
-az containerapp env create -g metheteacher-rg -n metheteacher-env -l eastus
-az containerapp create -g metheteacher-rg -n metheteacher \
-  --environment metheteacher-env \
-  --image <uniqueacr>.azurecr.io/metheteacher:latest \
-  --target-port 8080 --ingress external \
-  --secrets anthropic-key=<your-key> \
-  --env-vars ANTHROPIC_API_KEY=secretref:anthropic-key ANTHROPIC_MODEL=claude-sonnet-4-6
-```
-
-### Option C — Azure Static Web Apps
-
-Static Web Apps supports Next.js SSR via the Hybrid Next.js configuration. Create the resource with the Next.js preset and point it at this repository; no config changes are required here. Set `ANTHROPIC_API_KEY` in the SWA application settings.
+Leave the secrets unset to ignore this and use the dashboard integration above.
 
 ## PDF export
 
-The "Export to PDF" button calls `window.print()` against a print-scoped stylesheet that hides the app chrome. Users get the native browser PDF dialog (paper size, margins, etc.). To change a lesson's style, character, level, or language before exporting, edit the form on the left and regenerate — the HTML updates and the PDF follows.
+The "Export to PDF" button calls `window.print()` against a print-scoped
+stylesheet that hides the app chrome. Users get the native browser PDF dialog.
+To change the persona before exporting, click **Edit** on the profile card and
+regenerate.
 
 ## Security notes for production
 
-- The lesson HTML is generated by an LLM and rendered via `dangerouslySetInnerHTML`. The system prompt forbids `<script>` and `<style>` but user-supplied topics could theoretically prompt-inject. Before production, wrap the lesson HTML in [DOMPurify](https://github.com/cure53/DOMPurify) sanitization.
-- `ANTHROPIC_API_KEY` must only live in server-side env vars — never prefix it with `NEXT_PUBLIC_`.
-- Per-IP rate limiting on `/api/lesson` is recommended to bound cost.
+- The lesson HTML is generated by an LLM and rendered via `dangerouslySetInnerHTML`. The system prompt forbids `<script>`/`<style>`, but before serious production use, wrap the lesson HTML in [DOMPurify](https://github.com/cure53/DOMPurify).
+- `GROQ_API_KEY` must only live in server-side env vars — never prefix it with `NEXT_PUBLIC_`.
+- The 5-free-lesson limit is client-side (`localStorage`) and easily bypassed; it bounds casual use, not abuse. Groq's free-tier rate limit is the real cost ceiling. Add per-IP rate limiting on `/api/lesson` for heavier traffic.
+
+## Other hosting options
+
+The app builds in `standalone` mode and ships a `Dockerfile`, so it also runs on
+Hugging Face Spaces (Docker), Render, Railway, or Azure — set `GROQ_API_KEY` as a
+secret in whichever platform you choose.
 
 ## Project layout
 
@@ -96,14 +105,14 @@ The "Export to PDF" button calls `window.print()` against a print-scoped stylesh
 src/
 ├── app/
 │   ├── page.tsx              # landing
-│   ├── lesson/page.tsx       # lesson builder + viewer
-│   ├── api/lesson/route.ts   # streaming lesson generation
+│   ├── lesson/page.tsx       # persona questionnaire + chapter lesson viewer
+│   ├── api/lesson/route.ts   # streaming, persona-driven lesson generation (Groq)
 │   └── globals.css           # Tailwind + print styles
 └── lib/
-    ├── anthropic.ts          # SDK client
-    ├── constants.ts          # styles, characters, languages, levels
-    ├── prompt.ts             # system prompt (cached) + user prompt
-    ├── preferences.ts        # localStorage prefs + style learning
+    ├── groq.ts               # Groq OpenAI-compatible streaming client (fetch, no SDK)
+    ├── constants.ts          # classes, subjects, interests, styles, characters, languages
+    ├── prompt.ts             # persona-driven system + user prompts
+    ├── persona.ts            # localStorage persona model
     ├── quota.ts              # 5-free-lesson counter
     └── tts.ts                # Web Speech helpers
 ```

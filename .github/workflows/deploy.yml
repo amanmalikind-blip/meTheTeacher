@@ -1,0 +1,71 @@
+# Optional: deploy to Vercel from GitHub Actions.
+#
+# This is ONLY needed if you prefer GitHub to drive the deploy instead of
+# Vercel's built-in Git integration (which needs no workflow at all).
+#
+# It runs only when the three Vercel secrets are present, so it stays dormant
+# until you opt in:
+#   VERCEL_TOKEN       https://vercel.com/account/tokens
+#   VERCEL_ORG_ID      from .vercel/project.json after `npx vercel link`
+#   VERCEL_PROJECT_ID  from .vercel/project.json after `npx vercel link`
+#
+# Remember to also set GROQ_API_KEY in the Vercel project's env vars.
+
+name: Deploy to Vercel
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for Vercel credentials
+        id: guard
+        run: |
+          if [ -n "${{ secrets.VERCEL_TOKEN }}" ] && \
+             [ -n "${{ secrets.VERCEL_ORG_ID }}" ] && \
+             [ -n "${{ secrets.VERCEL_PROJECT_ID }}" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Vercel secrets not set — skipping deploy. Use Vercel's Git integration, or add the secrets to enable this workflow."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: steps.guard.outputs.ready == 'true'
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        if: steps.guard.outputs.ready == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Vercel CLI
+        if: steps.guard.outputs.ready == 'true'
+        run: npm install -g vercel@latest
+
+      - name: Pull Vercel environment
+        if: steps.guard.outputs.ready == 'true'
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build
+        if: steps.guard.outputs.ready == 'true'
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy
+        if: steps.guard.outputs.ready == 'true'
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
