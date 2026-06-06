@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import DOMPurify from "isomorphic-dompurify";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   CBSE_CLASSES,
@@ -78,6 +79,9 @@ export default function LessonPage() {
     const matching = voices.filter((v) => v.lang.toLowerCase().startsWith(base));
     return matching.length > 0 ? matching : voices;
   }, [voices, persona, draft]);
+
+  // The lesson HTML is model-generated; sanitize before rendering or reading.
+  const safeHtml = useMemo(() => DOMPurify.sanitize(html), [html]);
 
   if (!hydrated) {
     return <main className="mx-auto max-w-5xl px-6 py-16">Loading…</main>;
@@ -191,7 +195,7 @@ export default function LessonPage() {
       return;
     }
     const lang = LANGUAGES.find((l) => l.id === persona.language)?.bcp47 ?? "en-IN";
-    const utter = speak(htmlToPlainText(html), {
+    const utter = speak(htmlToPlainText(safeHtml), {
       voiceURI: persona.voiceURI,
       lang,
       rate: 1
@@ -516,7 +520,7 @@ export default function LessonPage() {
               </div>
               <div
                 className="lesson-html px-6 py-6"
-                dangerouslySetInnerHTML={{ __html: html }}
+                dangerouslySetInnerHTML={{ __html: safeHtml }}
               />
               {phase === "streaming" && (
                 <div className="no-print px-6 pb-6 text-sm text-slate-500">

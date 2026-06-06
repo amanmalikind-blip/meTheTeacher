@@ -10,6 +10,7 @@ import {
   LANGUAGES,
   TEACHING_STYLES
 } from "@/lib/constants";
+import { clientIp, rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -63,6 +64,17 @@ function validate(body: unknown): LessonRequest | { error: string } {
 }
 
 export async function POST(req: NextRequest) {
+  const limit = rateLimit(clientIp(req));
+  if (!limit.ok) {
+    return Response.json(
+      { error: "Too many requests. Please slow down and try again shortly." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(limit.retryAfterSeconds) }
+      }
+    );
+  }
+
   let body: unknown;
   try {
     body = await req.json();
