@@ -112,6 +112,7 @@ src/
 └── lib/
     ├── groq.ts               # Groq OpenAI-compatible streaming client (fetch, no SDK)
     ├── constants.ts          # classes, subjects, interests, styles, characters, languages
+    ├── chapters.ts           # real CBSE/NCERT chapter lists per class & subject
     ├── prompt.ts             # persona-driven system + user prompts
     ├── persona.ts            # localStorage persona model
     ├── rate-limit.ts         # per-IP rate limiting for /api/lesson
