@@ -69,7 +69,44 @@ export async function streamGroqChat(
     throw new GroqError(upstream.status, detail || upstream.statusText);
   }
 
-  const reader = upstream.body.getReader();
+  return streamFromReader(upstream.body.getReader());
+}
+
+// Non-streaming completion — returns the full text. `json` enables Groq's
+// JSON object mode for structured output.
+export async function groqChat(
+  opts: ChatOptions & { json?: boolean }
+): Promise<string> {
+  const key = getKey();
+  const res = await fetch(GROQ_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${key}`
+    },
+    body: JSON.stringify({
+      model: GROQ_MODEL,
+      max_tokens: opts.maxTokens ?? 4096,
+      temperature: opts.temperature ?? 0.7,
+      ...(opts.json ? { response_format: { type: "json_object" } } : {}),
+      messages: [
+        { role: "system", content: opts.system },
+        { role: "user", content: opts.user }
+      ]
+    }),
+    signal: opts.signal
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new GroqError(res.status, detail || res.statusText);
+  }
+  const data = await res.json();
+  return data?.choices?.[0]?.message?.content ?? "";
+}
+
+function streamFromReader(
+  reader: ReadableStreamDefaultReader<Uint8Array>
+): ReadableStream<Uint8Array> {
   const decoder = new TextDecoder();
   const encoder = new TextEncoder();
   let buffer = "";

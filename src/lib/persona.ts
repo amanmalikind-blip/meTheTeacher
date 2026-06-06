@@ -1,5 +1,3 @@
-"use client";
-
 import {
   ALL_INTEREST_IDS,
   ALL_SUBJECT_IDS,
@@ -14,8 +12,6 @@ import {
   type LanguageId,
   type TeachingStyleId
 } from "./constants";
-
-const PERSONA_KEY = "mtt.persona.v2";
 
 export type Persona = {
   klass: ClassId;
@@ -52,26 +48,4 @@ export function isCompletePersona(p: Partial<Persona> | null): p is Persona {
     CHARACTERS.some((c) => c.id === p.character) &&
     LANGUAGES.some((l) => l.id === p.language)
   );
-}
-
-export function loadPersona(): Persona | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(PERSONA_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<Persona>;
-    return isCompletePersona(parsed) ? parsed : null;
-  } catch {
-    return null;
-  }
-}
-
-export function savePersona(p: Persona): void {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(PERSONA_KEY, JSON.stringify(p));
-}
-
-export function clearPersona(): void {
-  if (typeof window === "undefined") return;
-  window.localStorage.removeItem(PERSONA_KEY);
 }

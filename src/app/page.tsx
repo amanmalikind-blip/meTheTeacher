@@ -32,21 +32,21 @@ export default function HomePage() {
         <p className="mt-5 text-lg text-slate-600 max-w-2xl mx-auto">
           Tell us your class, subject and interests. Your AI teacher explains any
           Class 10 or Class 12 chapter simply — with analogies and examples drawn
-          from things you actually enjoy. Five free lessons, no sign-up.
+          from things you actually enjoy. Plus quizzes, a doubt-chat, and a saved library.
         </p>
         <div className="mt-8 flex gap-3 justify-center">
           <Link
-            href="/lesson"
+            href="/register"
             className="inline-flex items-center rounded-lg bg-brand-600 px-5 py-3 text-white font-semibold hover:bg-brand-700 transition"
           >
-            Build my profile
+            Get started free
           </Link>
-          <a
-            href="#how"
+          <Link
+            href="/login"
             className="inline-flex items-center rounded-lg bg-white px-5 py-3 text-slate-700 font-semibold border border-slate-200 hover:bg-slate-100 transition"
           >
-            How it works
-          </a>
+            Sign in
+          </Link>
         </div>
       </header>
 
@@ -63,7 +63,7 @@ export default function HomePage() {
       </section>
 
       <footer className="mt-20 text-center text-sm text-slate-500">
-        Free tier: 5 lessons, no sign-up required. Powered by open-source AI.
+        Free to use. Create an account to save your lessons, quizzes and progress.
       </footer>
     </main>
   );

@@ -69,6 +69,63 @@ Hard rules:
 - Never include safety disclaimers, meta commentary, or "as an AI" phrasing.
 - Output raw HTML only. Do NOT wrap it in code fences.`;
 
+// --- Doubt-chat: short, plain-text follow-up answers ---
+export const DOUBT_SYSTEM_PROMPT = `You are meTheTeacher, a friendly CBSE tutor answering a student's follow-up doubt about a chapter they just studied.
+
+Rules:
+- Answer in plain text (no HTML, no markdown headings). Short paragraphs or a few bullet-like lines are fine.
+- Keep it concise (under ~150 words) and directly address the doubt.
+- Use one analogy from the student's interests if it genuinely helps.
+- Match the student's class level and chosen language (English / Hindi / Hinglish).
+- Stay accurate to the CBSE NCERT syllabus. If the question is off-topic from studying, gently steer back.`;
+
+export function buildDoubtPrompt(
+  req: Omit<LessonRequest, "chapter"> & { chapter: string; question: string }
+): string {
+  const klassLabel =
+    CBSE_CLASSES.find((c) => c.id === req.klass)?.label ?? `Class ${req.klass}`;
+  const lang = LANGUAGES.find((l) => l.id === req.language)?.label ?? "English";
+  const interests =
+    req.interests.map((i) => interestLabel(i).replace(/^\W+\s*/, "")).join(", ") ||
+    "general everyday life";
+  return `Student: ${klassLabel} (CBSE), studying "${subjectLabel(req.subject)}".
+Current chapter: ${req.chapter}
+Interests (for analogies): ${interests}
+Language: ${lang}
+
+Their doubt: ${req.question}
+
+Answer the doubt now.`;
+}
+
+// --- Quiz generation: returns strict JSON ---
+export const QUIZ_SYSTEM_PROMPT = `You are meTheTeacher, a CBSE exam coach. You write multiple-choice practice questions for a chapter.
+
+You MUST respond with a single JSON object only (no prose, no markdown, no code fences) of the exact shape:
+{"questions":[{"question":"...","options":["A","B","C","D"],"correctIndex":0,"explanation":"..."}]}
+
+Rules:
+- Exactly 4 options per question; correctIndex is the 0-based index of the right option.
+- Questions must match the CBSE NCERT syllabus and the student's class level.
+- Mix difficulty (recall, understanding, application). Keep options plausible.
+- "explanation" is one short sentence saying why the answer is correct.
+- Write questions/options/explanations in the student's chosen language (keep technical terms in English for Hinglish).`;
+
+export function buildQuizPrompt(
+  req: Omit<LessonRequest, "style" | "character"> & { count: number }
+): string {
+  const klassLabel =
+    CBSE_CLASSES.find((c) => c.id === req.klass)?.label ?? `Class ${req.klass}`;
+  const lang = LANGUAGES.find((l) => l.id === req.language)?.label ?? "English";
+  return `Generate exactly ${req.count} MCQs.
+Class: ${klassLabel} (CBSE)
+Subject: ${subjectLabel(req.subject)}
+Chapter: ${req.chapter}
+Language: ${lang}
+
+Return the JSON object now.`;
+}
+
 export function buildUserPrompt(req: LessonRequest): string {
   const klassLabel =
     CBSE_CLASSES.find((c) => c.id === req.klass)?.label ?? `Class ${req.klass}`;

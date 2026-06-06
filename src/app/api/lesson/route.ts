@@ -11,6 +11,7 @@ import {
   TEACHING_STYLES
 } from "@/lib/constants";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
+import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -64,6 +65,12 @@ function validate(body: unknown): LessonRequest | { error: string } {
 }
 
 export async function POST(req: NextRequest) {
+  const supabase = createClient();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+  if (!user) return Response.json({ error: "Please sign in." }, { status: 401 });
+
   const limit = rateLimit(clientIp(req));
   if (!limit.ok) {
     return Response.json(
