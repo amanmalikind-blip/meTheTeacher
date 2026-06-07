@@ -7,6 +7,7 @@ import {
   CBSE_CLASSES,
   CHARACTERS,
   COMFORT_LEVELS,
+  DEPTH_LEVELS,
   LANGUAGES,
   TEACHING_STYLES
 } from "@/lib/constants";
@@ -54,6 +55,9 @@ function validate(body: unknown): LessonRequest | { error: string } {
 
   const city =
     typeof b.city === "string" ? b.city.trim().slice(0, 60) : undefined;
+  const depth = DEPTH_LEVELS.some((d) => d.id === b.depth)
+    ? (b.depth as LessonRequest["depth"])
+    : "detailed";
 
   return {
     klass: b.klass as LessonRequest["klass"],
@@ -64,6 +68,7 @@ function validate(body: unknown): LessonRequest | { error: string } {
     character: b.character as LessonRequest["character"],
     language: b.language as LessonRequest["language"],
     city,
+    depth,
     chapter
   };
 }
@@ -98,11 +103,14 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: validated.error }, { status: 400 });
   }
 
+  // Bigger budget for fuller chapters; standard stays tighter/faster.
+  const maxTokens = validated.depth === "standard" ? 4096 : 8000;
+
   try {
     const stream = await streamGroqChat({
       system: LESSON_SYSTEM_PROMPT,
       user: buildUserPrompt(validated),
-      maxTokens: 4096,
+      maxTokens,
       temperature: 0.7,
       signal: req.signal
     });

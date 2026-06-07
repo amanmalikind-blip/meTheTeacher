@@ -2,7 +2,13 @@
 
 import DOMPurify from "isomorphic-dompurify";
 import { useMemo, useRef, useState } from "react";
-import { LANGUAGES, interestLabel, subjectLabel } from "@/lib/constants";
+import {
+  DEPTH_LEVELS,
+  LANGUAGES,
+  interestLabel,
+  subjectLabel,
+  type DepthId
+} from "@/lib/constants";
 import { chaptersFor } from "@/lib/chapters";
 import type { Persona } from "@/lib/persona";
 import { saveLesson } from "@/lib/db";
@@ -24,6 +30,7 @@ export function LessonClient({
   const [useCustom, setUseCustom] = useState(
     !!initialChapter && !chapterOptions.includes(initialChapter)
   );
+  const [depth, setDepth] = useState<DepthId>("detailed");
   const [html, setHtml] = useState("");
   const [phase, setPhase] = useState<Phase>("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -55,7 +62,7 @@ export function LessonClient({
       const res = await fetch("/api/lesson", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...persona, chapter: chapter.trim() }),
+        body: JSON.stringify({ ...persona, chapter: chapter.trim(), depth }),
         signal: controller.signal
       });
 
@@ -185,6 +192,21 @@ export function LessonClient({
               required
             />
           )}
+
+          <label className="block text-sm font-medium text-slate-700 mb-1 mt-4">
+            How much detail?
+          </label>
+          <select
+            value={depth}
+            onChange={(e) => setDepth(e.target.value as DepthId)}
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500"
+          >
+            {DEPTH_LEVELS.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.label} — {d.hint}
+              </option>
+            ))}
+          </select>
 
           <button
             type="submit"

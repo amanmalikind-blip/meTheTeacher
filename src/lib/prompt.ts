@@ -9,6 +9,7 @@ import {
   type CharacterId,
   type ClassId,
   type ComfortId,
+  type DepthId,
   type LanguageId,
   type TeachingStyleId
 } from "./constants";
@@ -22,6 +23,7 @@ export type LessonRequest = {
   character: CharacterId;
   language: LanguageId;
   city?: string;
+  depth?: DepthId;
   chapter: string;
 };
 
@@ -42,13 +44,20 @@ You may use three special div classes for callouts:
 - <div class="example">…</div> for worked examples / solved problems
 - <div class="tip">…</div> for exam tips or "remember this" notes
 
-Every lesson has this structure, in order:
+Every lesson MUST be a complete, exam-ready treatment of the chapter — not a summary. Cover EVERY major subtopic that the NCERT chapter contains, in order, so a student could learn the whole chapter from this alone. Use this structure:
 1. <h1> with the chapter title
 2. A short, warm opening paragraph in the narrator character's voice that hooks the student using one of their interests
-3. <h2>What you'll learn</h2> followed by a <ul> of 3–5 concrete learning outcomes aligned to the CBSE syllabus for that class and subject
-4. 3–6 teaching sections, each introduced by <h2>. Explain concepts from first principles, building up gradually. EACH section must include at least one callout, and at least half of the analogy callouts must use the student's stated interests.
-5. <h2>Check your understanding</h2> with 3 short questions and their answers inside <details><summary>Show answer</summary>…</details>. Prefer the kind of question that appears in CBSE board exams.
-6. <h2>Quick revision</h2> with a <ul> of 4–6 one-line takeaways for last-minute revision
+3. <h2>What you'll learn</h2> followed by a <ul> of 4–6 concrete learning outcomes aligned to the CBSE syllabus
+4. One <h2> teaching section for EACH major subtopic of the chapter (typically 5–9 sections — do not skip subtopics). In each section:
+   - Explain from first principles in plain language, building up gradually.
+   - Put every important term in <strong> the first time, with a clear definition.
+   - Include the relevant laws, formulas or equations (use <code> or <pre>), and state what each symbol means.
+   - For Science/Maths/numerical subjects, include at least one fully worked <div class="example"> with step-by-step solution; describe any important diagram in words.
+   - Include at least one callout; favour <div class="analogy"> tied to the student's interests/city.
+5. <h2>Key terms</h2> — a <ul> glossary of the chapter's important terms, each with a one-line definition.
+6. <h2>Common mistakes to avoid</h2> — a <ul> of frequent errors students make in this chapter.
+7. <h2>Practice questions</h2> — 5–6 CBSE board-style questions of mixed marks (1-mark, 3-mark, 5-mark / numericals), each with a full model answer inside <details><summary>Show answer</summary>…</details>.
+8. <h2>Quick revision</h2> — a <ul> of 6–8 one-line takeaways for last-minute revision.
 
 Teaching styles available:
 ${STYLE_GUIDE}
@@ -57,6 +66,7 @@ Narrator characters available:
 ${CHARACTER_GUIDE}
 
 Hard rules:
+- Be thorough and complete. It is better to be comprehensive than brief. Do not stop early or leave subtopics out.
 - Stay accurate to the CBSE NCERT syllabus for the given class and subject. If the chapter name is ambiguous, teach the standard CBSE chapter that best matches it.
 - Pitch difficulty to the class level (Class 10 vs Class 12) AND the student's stated confidence.
 - Weave the student's interests into analogies and examples naturally — do not force every single one, choose the ones that fit the concept best.
@@ -141,6 +151,13 @@ export function buildUserPrompt(req: LessonRequest): string {
     req.interests.map((i) => interestLabel(i).replace(/^\W+\s*/, "")).join(", ") ||
     "general everyday life";
 
+  const depthInstruction =
+    req.depth === "standard"
+      ? "Depth: STANDARD — a clear, solid overview covering all main subtopics, but you can keep explanations tighter."
+      : req.depth === "exam"
+        ? "Depth: EXAM-PREP — be comprehensive AND exam-focused: extra solved numericals/derivations, mark-wise model answers, and emphasise frequently-asked board points."
+        : "Depth: DETAILED — cover the FULL chapter, every subtopic explained thoroughly with examples. Aim for a long, complete lesson.";
+
   return `Teach this chapter to a single student. Build the explanation around their persona.
 
 Student persona:
@@ -156,7 +173,9 @@ Student persona:
 - Narrator character: ${req.character}
 - Language: ${lang}
 
+${depthInstruction}
+
 Chapter / topic to explain: ${req.chapter}
 
-Begin the HTML now.`;
+Begin the HTML now. Remember: cover the whole chapter, every subtopic.`;
 }
