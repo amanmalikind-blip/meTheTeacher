@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { signIn, signUp, type AuthState } from "@/app/auth/actions";
 import { createClient } from "@/lib/supabase/client";
+import { SUPABASE_ANON_KEY } from "@/lib/supabase/env";
 
 function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
@@ -31,24 +32,34 @@ export function AuthForm({
   const [oauthError, setOauthError] = useState<string | null>(null);
   const [busyProvider, setBusyProvider] = useState<string | null>(null);
 
-  const signInWith = async (provider: "google" | "apple") => {
+  const signInWithGoogle = async () => {
     setOauthError(null);
-    setBusyProvider(provider);
+    setBusyProvider("google");
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider,
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
         options: {
           redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(
             next || "/dashboard"
-          )}`
+          )}`,
+          // Build the redirect ourselves so we can guarantee the apikey is
+          // attached to the /authorize request (Supabase's gateway requires it).
+          skipBrowserRedirect: true
         }
       });
       if (error) {
         setOauthError(error.message);
         setBusyProvider(null);
+        return;
       }
-      // On success the browser is redirected to the provider automatically.
+      if (data?.url) {
+        const authUrl = new URL(data.url);
+        if (SUPABASE_ANON_KEY && !authUrl.searchParams.get("apikey")) {
+          authUrl.searchParams.set("apikey", SUPABASE_ANON_KEY);
+        }
+        window.location.assign(authUrl.toString());
+      }
     } catch (e) {
       setOauthError(e instanceof Error ? e.message : "Could not start sign-in.");
       setBusyProvider(null);
@@ -73,21 +84,12 @@ export function AuthForm({
       <div className="mt-8 space-y-3">
         <button
           type="button"
-          onClick={() => signInWith("google")}
+          onClick={signInWithGoogle}
           disabled={!!busyProvider}
           className="w-full flex items-center justify-center gap-3 rounded-lg border border-slate-300 bg-white py-2.5 font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60 transition"
         >
           <GoogleIcon />
           {busyProvider === "google" ? "Redirecting…" : "Continue with Google"}
-        </button>
-        <button
-          type="button"
-          onClick={() => signInWith("apple")}
-          disabled={!!busyProvider}
-          className="w-full flex items-center justify-center gap-3 rounded-lg bg-black py-2.5 font-medium text-white hover:bg-slate-800 disabled:opacity-60 transition"
-        >
-          <AppleIcon />
-          {busyProvider === "apple" ? "Redirecting…" : "Continue with Apple"}
         </button>
         {oauthError && <p className="text-sm text-red-600">{oauthError}</p>}
       </div>
@@ -193,10 +195,3 @@ function GoogleIcon() {
   );
 }
 
-function AppleIcon() {
-  return (
-    <svg width="16" height="18" viewBox="0 0 14 17" fill="currentColor" aria-hidden="true">
-      <path d="M11.6 9c0-1.5.7-2.6 2-3.3-.7-1-1.8-1.6-3.2-1.7-1.3-.1-2.8.8-3.3.8-.5 0-1.7-.8-2.8-.8C2 4.1.6 5.2.6 7.6c0 .9.2 1.9.5 2.9.5 1.3 2 4.5 3.6 4.4.8 0 1.3-.5 2.3-.5s1.5.5 2.3.5c1.6 0 3-2.9 3.4-4.2-2.1-1-3.1-2.7-3.1-1.7zM9.4 2.9c.7-.8 1.1-1.9 1-3-1 .1-2 .6-2.7 1.4-.6.7-1.1 1.8-.9 2.9 1 .1 2-.5 2.6-1.3z" />
-    </svg>
-  );
-}
