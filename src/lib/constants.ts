@@ -126,7 +126,12 @@ export type ComfortId = (typeof COMFORT_LEVELS)[number]["id"];
 export const DEPTH_LEVELS = [
   { id: "standard", label: "Standard", hint: "A clear overview of the chapter" },
   { id: "detailed", label: "Detailed", hint: "Full chapter — every subtopic in depth" },
-  { id: "exam", label: "Exam-prep", hint: "In-depth + board-exam focus & practice" }
+  { id: "exam", label: "Exam-prep", hint: "In-depth + board-exam focus & practice" },
+  {
+    id: "full",
+    label: "Full chapter (section-by-section)",
+    hint: "Longest & most complete — built in multiple passes, uses more tokens"
+  }
 ] as const;
 
 export type DepthId = (typeof DEPTH_LEVELS)[number]["id"];

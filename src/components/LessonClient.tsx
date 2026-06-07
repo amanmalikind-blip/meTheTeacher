@@ -36,9 +36,119 @@ export function LessonClient({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [lessonId, setLessonId] = useState<string | null>(null);
+  const [progress, setProgress] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   const safeHtml = useMemo(() => DOMPurify.sanitize(html), [html]);
+
+  const persist = async (finalHtml: string) => {
+    try {
+      const supabase = createClient();
+      const id = await saveLesson(supabase, {
+        klass: persona.klass,
+        subject: persona.subject,
+        chapter: chapter.trim(),
+        language: persona.language,
+        style: persona.style,
+        character: persona.character,
+        html: finalHtml
+      });
+      setLessonId(id);
+    } catch {
+      /* non-fatal: lesson still shows, just not saved */
+    }
+  };
+
+  // Streams one /api/lesson/part response, appending live to `prefix`.
+  // Retries once or twice on a 429 (free-tier token throttle).
+  const streamPart = async (
+    payload: Record<string, unknown>,
+    controller: AbortController,
+    prefix: string
+  ): Promise<string> => {
+    for (let attempt = 0; ; attempt++) {
+      const res = await fetch("/api/lesson/part", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+      if (res.status === 429 && attempt < 2) {
+        const wait = (Number(res.headers.get("Retry-After")) || 8) * 1000;
+        await new Promise((r) => setTimeout(r, wait));
+        continue;
+      }
+      if (!res.ok || !res.body) {
+        let msg = `Request failed (${res.status}).`;
+        try {
+          const d = (await res.json()) as { error?: string };
+          if (d.error) msg = d.error;
+        } catch {
+          /* ignore */
+        }
+        throw new Error(msg);
+      }
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let local = "";
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        local += decoder.decode(value, { stream: true });
+        setHtml(prefix + local);
+      }
+      return local;
+    }
+  };
+
+  // "Full chapter" mode: outline → intro → each section → wrap, as separate passes.
+  const generateFull = async (controller: AbortController) => {
+    const base = { ...persona, chapter: chapter.trim(), depth: "full" };
+
+    setProgress("Planning the chapter…");
+    const oRes = await fetch("/api/lesson/outline", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(base),
+      signal: controller.signal
+    });
+    if (!oRes.ok) {
+      let msg = `Request failed (${oRes.status}).`;
+      try {
+        const d = (await oRes.json()) as { error?: string };
+        if (d.error) msg = d.error;
+      } catch {
+        /* ignore */
+      }
+      throw new Error(msg);
+    }
+    const { sections } = (await oRes.json()) as { sections: string[] };
+    const partBase = { ...base, sections };
+
+    const escapeHtml = (s: string) =>
+      s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    let acc = `<h1>${escapeHtml(chapter.trim())}</h1>`;
+    setHtml(acc);
+
+    setProgress("Writing the introduction…");
+    acc += await streamPart({ ...partBase, mode: "intro" }, controller, acc);
+
+    for (let i = 0; i < sections.length; i++) {
+      setProgress(`Writing section ${i + 1} of ${sections.length}: ${sections[i]}`);
+      acc += await streamPart(
+        { ...partBase, mode: "section", title: sections[i] },
+        controller,
+        acc
+      );
+    }
+
+    setProgress("Adding key terms, practice & revision…");
+    acc += await streamPart({ ...partBase, mode: "wrap" }, controller, acc);
+
+    setProgress(null);
+    setPhase("done");
+    await persist(acc);
+  };
 
   const onGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,6 +162,7 @@ export function LessonClient({
     setIsSpeaking(false);
     setHtml("");
     setLessonId(null);
+    setProgress(null);
     setPhase("streaming");
 
     const controller = new AbortController();
@@ -59,6 +170,11 @@ export function LessonClient({
     abortRef.current = controller;
 
     try {
+      if (depth === "full") {
+        await generateFull(controller);
+        return;
+      }
+
       const res = await fetch("/api/lesson", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -89,26 +205,11 @@ export function LessonClient({
         setHtml(acc);
       }
       setPhase("done");
-
-      // Persist the finished lesson for the dashboard + library.
-      try {
-        const supabase = createClient();
-        const id = await saveLesson(supabase, {
-          klass: persona.klass,
-          subject: persona.subject,
-          chapter: chapter.trim(),
-          language: persona.language,
-          style: persona.style,
-          character: persona.character,
-          html: acc
-        });
-        setLessonId(id);
-      } catch {
-        /* non-fatal: lesson still shows, just not saved */
-      }
+      await persist(acc);
     } catch (err) {
       if (controller.signal.aborted) return;
       setErrorMsg(err instanceof Error ? err.message : "Unknown error");
+      setProgress(null);
       setPhase("error");
     }
   };
@@ -252,7 +353,7 @@ export function LessonClient({
               />
               {phase === "streaming" && (
                 <div className="no-print px-6 pb-6 text-sm text-slate-500">
-                  Your teacher is writing…
+                  {progress ?? "Your teacher is writing…"}
                 </div>
               )}
             </article>
