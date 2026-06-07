@@ -122,6 +122,15 @@ export const COMFORT_LEVELS = [
 
 export type ComfortId = (typeof COMFORT_LEVELS)[number]["id"];
 
+// How much detail the generated lesson should contain.
+export const DEPTH_LEVELS = [
+  { id: "standard", label: "Standard", hint: "A clear overview of the chapter" },
+  { id: "detailed", label: "Detailed", hint: "Full chapter — every subtopic in depth" },
+  { id: "exam", label: "Exam-prep", hint: "In-depth + board-exam focus & practice" }
+] as const;
+
+export type DepthId = (typeof DEPTH_LEVELS)[number]["id"];
+
 export const LANGUAGES = [
   { id: "en", label: "English", bcp47: "en-IN" },
   { id: "hi", label: "Hindi", bcp47: "hi-IN" },
