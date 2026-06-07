@@ -1,27 +1,66 @@
 # meTheTeacher
 
-An AI teaching platform that generates lessons on any topic, customised to the learner's level, preferred teaching style, narrator character, and language. Lessons render as styled HTML in the browser and export to PDF via the browser's print pipeline.
+An AI study platform for **CBSE Class 10 & 12** students. Each student creates an
+account and answers a short questionnaire that captures their **persona** — class,
+subject, interests/hobbies, confidence level, preferred teaching style, teacher
+"vibe" and language. An agentic AI then explains any chapter simply, like a
+teacher, using **analogies and examples drawn from things that student actually
+enjoys** (cricket, gaming, movies, music, …). Progress, lessons and quizzes are
+saved to their account and sync across devices.
 
-- **5 free lessons** per visitor (tracked in `localStorage`; no sign-up).
-- **HTML online view** with analogy / example / tip callouts.
-- **PDF export** with the user's chosen style baked in (regenerate → print).
-- **Teaching styles**: analogies, Socratic, worked examples, story-driven, visual, project-based.
-- **Characters**: friendly mentor, quirky scientist, strict professor, wise elder, hype coach.
-- **Voices / languages**: 9 languages; Web Speech API reads lessons aloud with the user's chosen voice.
-- **Auto-picks the user's favourite style** next time based on usage history.
+- **Accounts + cloud sync**: email/password login; persona, lessons, quizzes and progress persist across devices.
+- **Persona-driven lessons**: explanations built around each student's interests — and their **home city** (local food, famous joints, daily habits) — CBSE-aligned and pitched to their class.
+- **Chapter dropdowns**: real NCERT chapter lists per subject (plus a free-text option).
+- **Quizzes & mock tests**: auto-generated MCQs per chapter with scoring, review and explanations.
+- **Doubt-chat**: ask follow-up questions on any lesson and get persona-style answers.
+- **Library + dashboard**: revisit saved lessons; track streaks, lessons, quiz scores and per-subject progress.
+- **Languages**: English, Hindi, or Hinglish. Read-aloud (Web Speech) + PDF export.
+
+## Cost: effectively free
+
+Designed to run at **₹0 / $0** for a public site:
+
+| Piece | Choice | Cost |
+|---|---|---|
+| LLM | **Groq** open-source models (`llama-3.3-70b-versatile`) | Free tier — rate-limits at quota, so **no surprise bill** |
+| Auth + DB | **Supabase** (Postgres + Auth + RLS) | Free tier — 500 MB DB, 50k monthly users |
+| Hosting | **Vercel** Hobby plan | Free — native Next.js, auto-deploys from GitHub |
+| Code | **GitHub** | Free |
 
 ## Stack
 
 - Next.js 14 (App Router) + TypeScript + Tailwind CSS
-- `@anthropic-ai/sdk` on a server-side API route (streams HTML)
-- Client-side `localStorage` for quota and preferences
-- Browser `window.print()` + print CSS for PDF export
-- Web Speech API for text-to-speech
+- **Supabase** for authentication + Postgres, via `@supabase/ssr` (cookie sessions, middleware-refreshed) with Row-Level Security
+- **Groq** OpenAI-compatible API (via `fetch`) for lesson/doubt streaming and quiz JSON
+- DOMPurify sanitization, per-IP rate limiting, Web Speech TTS, print-to-PDF
+
+## How data is stored
+
+Every user has a row in Supabase's managed `auth.users`. Their data lives in
+Postgres tables keyed by `user_id` and locked down with Row-Level Security so each
+student only ever sees their own rows:
+
+| Table | Holds |
+|---|---|
+| `profiles` | name + persona (class, subject, interests, style, character, language) |
+| `lessons` | every generated lesson (chapter + HTML) → history & library |
+| `quiz_attempts` | score, questions, answers → quizzes & dashboard |
+| `doubts` | follow-up Q&A per lesson |
+
+Streaks and progress on the dashboard are computed from these timestamps. The full
+schema (tables, indexes, RLS policies, the new-user trigger) is in
+[`supabase/schema.sql`](supabase/schema.sql).
 
 ## Run locally
 
+1. **Create a Supabase project** at https://supabase.com (free).
+2. In the dashboard → **SQL Editor**, paste and run [`supabase/schema.sql`](supabase/schema.sql).
+3. (Optional, for instant testing) **Authentication → Providers → Email**: turn
+   *Confirm email* OFF so sign-up logs you straight in.
+4. Copy your keys from **Project Settings → API**.
+
 ```sh
-cp .env.example .env.local      # fill in ANTHROPIC_API_KEY
+cp .env.example .env.local      # fill in the four values below
 npm install
 npm run dev                     # http://localhost:3000
 ```
@@ -30,80 +69,55 @@ Env vars:
 
 | Name | Purpose |
 |---|---|
-| `ANTHROPIC_API_KEY` | Required. Server-only key used by `/api/lesson`. |
-| `ANTHROPIC_MODEL` | Optional. Defaults to `claude-sonnet-4-6`. |
-| `NEXT_PUBLIC_FREE_LESSON_LIMIT` | Optional. Free-tier cap, default `5`. |
+| `GROQ_API_KEY` | **Required.** Server-only Groq key. Get one at https://console.groq.com/keys |
+| `GROQ_MODEL` | Optional. Defaults to `llama-3.3-70b-versatile`. |
+| `NEXT_PUBLIC_SUPABASE_URL` | **Required.** Supabase project URL. |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | **Required.** Supabase anon public key (safe to expose; RLS protects data). |
 
-## Deploying to Azure
+## Deploy from GitHub to Vercel
 
-The app is a standard Next.js project built in `standalone` mode, so it deploys to Azure in three common ways. Pick one.
+1. Push this repo to GitHub.
+2. https://vercel.com → **Add New… → Project** → import this repository (auto-detects Next.js).
+3. Add the env vars from the table above under **Environment Variables**
+   (`GROQ_API_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`).
+4. In Supabase → **Authentication → URL Configuration**, set the Site URL to your
+   `*.vercel.app` domain (and add it to redirect URLs) so email links work.
+5. **Deploy.** Every push thereafter auto-deploys.
 
-### Option A — Azure App Service (Linux, Node 20)
+An optional GitHub Actions deploy workflow lives at `.github/workflows/deploy.yml`
+(dormant until you add `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` secrets).
+CI (typecheck + build) runs on every PR via `.github/workflows/ci.yml`.
 
-```sh
-az group create -n metheteacher-rg -l eastus
-az appservice plan create -g metheteacher-rg -n metheteacher-plan --is-linux --sku B1
-az webapp create -g metheteacher-rg -p metheteacher-plan -n <unique-app-name> --runtime "NODE:20-lts"
+## Security notes
 
-az webapp config appsettings set -g metheteacher-rg -n <unique-app-name> --settings \
-  ANTHROPIC_API_KEY=<your-key> \
-  ANTHROPIC_MODEL=claude-sonnet-4-6 \
-  NEXT_PUBLIC_FREE_LESSON_LIMIT=5 \
-  WEBSITE_NODE_DEFAULT_VERSION=~20
-
-az webapp config set -g metheteacher-rg -n <unique-app-name> \
-  --startup-file "node .next/standalone/server.js"
-
-# Deploy from local source
-az webapp up -g metheteacher-rg -n <unique-app-name> --runtime "NODE:20-lts"
-```
-
-The API route (`/api/lesson`) is server-side and streams responses, which App Service supports out of the box.
-
-### Option B — Azure Container Apps (Dockerfile included)
-
-```sh
-az group create -n metheteacher-rg -l eastus
-az acr create -g metheteacher-rg -n <uniqueacr> --sku Basic --admin-enabled true
-az acr build -r <uniqueacr> -t metheteacher:latest .
-
-az containerapp env create -g metheteacher-rg -n metheteacher-env -l eastus
-az containerapp create -g metheteacher-rg -n metheteacher \
-  --environment metheteacher-env \
-  --image <uniqueacr>.azurecr.io/metheteacher:latest \
-  --target-port 8080 --ingress external \
-  --secrets anthropic-key=<your-key> \
-  --env-vars ANTHROPIC_API_KEY=secretref:anthropic-key ANTHROPIC_MODEL=claude-sonnet-4-6
-```
-
-### Option C — Azure Static Web Apps
-
-Static Web Apps supports Next.js SSR via the Hybrid Next.js configuration. Create the resource with the Next.js preset and point it at this repository; no config changes are required here. Set `ANTHROPIC_API_KEY` in the SWA application settings.
-
-## PDF export
-
-The "Export to PDF" button calls `window.print()` against a print-scoped stylesheet that hides the app chrome. Users get the native browser PDF dialog (paper size, margins, etc.). To change a lesson's style, character, level, or language before exporting, edit the form on the left and regenerate — the HTML updates and the PDF follows.
-
-## Security notes for production
-
-- The lesson HTML is generated by an LLM and rendered via `dangerouslySetInnerHTML`. The system prompt forbids `<script>` and `<style>` but user-supplied topics could theoretically prompt-inject. Before production, wrap the lesson HTML in [DOMPurify](https://github.com/cure53/DOMPurify) sanitization.
-- `ANTHROPIC_API_KEY` must only live in server-side env vars — never prefix it with `NEXT_PUBLIC_`.
-- Per-IP rate limiting on `/api/lesson` is recommended to bound cost.
+- LLM-generated HTML is sanitized with DOMPurify before rendering or read-aloud.
+- All AI routes (`/api/lesson`, `/api/quiz`, `/api/doubt`) require an authenticated session and have per-IP rate limiting (`src/lib/rate-limit.ts`). For a hard cluster-wide limit on serverless, back it with Upstash Redis / Vercel KV.
+- Row-Level Security on every table guarantees users can only read/write their own data.
+- `GROQ_API_KEY` is server-only — never prefix it with `NEXT_PUBLIC_`.
 
 ## Project layout
 
 ```
+supabase/schema.sql              # DB tables + RLS policies + new-user trigger
 src/
+├── middleware.ts                # refreshes session, guards private routes
 ├── app/
-│   ├── page.tsx              # landing
-│   ├── lesson/page.tsx       # lesson builder + viewer
-│   ├── api/lesson/route.ts   # streaming lesson generation
-│   └── globals.css           # Tailwind + print styles
+│   ├── page.tsx                 # public landing
+│   ├── login, register          # auth screens
+│   ├── auth/                     # server actions + OAuth/confirm callback
+│   ├── (app)/                    # authenticated area (shared nav layout)
+│   │   ├── dashboard             # streaks, stats, recent lessons
+│   │   ├── onboarding, profile   # persona questionnaire
+│   │   ├── lesson                # persona lesson + doubt-chat
+│   │   ├── quiz                  # MCQ quizzes
+│   │   └── library/[id]          # saved lessons
+│   └── api/lesson|quiz|doubt     # Groq-backed routes (auth + rate-limited)
+├── components/                   # AppNav, AuthForm, PersonaForm, LessonClient, QuizClient, LibraryView
 └── lib/
-    ├── anthropic.ts          # SDK client
-    ├── constants.ts          # styles, characters, languages, levels
-    ├── prompt.ts             # system prompt (cached) + user prompt
-    ├── preferences.ts        # localStorage prefs + style learning
-    ├── quota.ts              # 5-free-lesson counter
-    └── tts.ts                # Web Speech helpers
+    ├── supabase/                 # browser, server & middleware clients
+    ├── db.ts                     # typed DB helpers + dashboard stats
+    ├── groq.ts                   # streaming + JSON Groq client (fetch)
+    ├── constants.ts, chapters.ts # CBSE data
+    ├── prompt.ts                 # lesson/doubt/quiz prompts
+    ├── persona.ts, rate-limit.ts, tts.ts
 ```
