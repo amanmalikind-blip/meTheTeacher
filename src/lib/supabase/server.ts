@@ -1,13 +1,14 @@
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
+import { SUPABASE_ANON_KEY, SUPABASE_URL } from "./env";
 
 // Server-side Supabase client for Server Components, Route Handlers and Server
 // Actions. Reads/writes the session cookie via Next's cookie store.
 export function createClient() {
   const cookieStore = cookies();
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY,
     {
       cookies: {
         getAll() {

@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { SUPABASE_ANON_KEY, SUPABASE_URL } from "./env";
 
 const PUBLIC_PATHS = ["/", "/login", "/register", "/auth"];
 
@@ -13,8 +14,8 @@ function isPublic(pathname: string) {
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const url = SUPABASE_URL;
+  const key = SUPABASE_ANON_KEY;
   // If Supabase isn't configured yet, don't block the app.
   if (!url || !key) return response;
 
@@ -35,9 +36,14 @@ export async function updateSession(request: NextRequest) {
     }
   });
 
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
+  let user = null;
+  try {
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
+  } catch {
+    // Don't crash the whole app on a transient auth/config hiccup.
+    return response;
+  }
 
   const { pathname } = request.nextUrl;
 
